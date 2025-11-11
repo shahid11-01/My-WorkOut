@@ -148,3 +148,5 @@ build/
 *.log
 .idea/uiDesigner.xml
 /.idea
+/.gradle/
+/.idea
