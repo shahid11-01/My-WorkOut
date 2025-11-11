@@ -134,3 +134,19 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Java / Spring Boot
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+.classpath
+.project
+.settings
+*.log
+.idea/uiDesigner.xml
+/.idea
+/.gradle/
+/.idea
