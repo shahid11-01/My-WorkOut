@@ -5,6 +5,7 @@ import com.mymember.fitness_tracker.Dto.AuthResponseDto;
 import com.mymember.fitness_tracker.Dto.LoginRequestDto;
 import com.mymember.fitness_tracker.Dto.RegisterRequestDto;
 import com.mymember.fitness_tracker.Service.AuthService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,8 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
+
     private AuthService authService;
 
     @PostMapping("/register")
