@@ -1,6 +1,7 @@
 package com.mymember.fitness_tracker.Entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,5 +37,6 @@ public class Exercise {
     private LocalDateTime exerciseCreatedAt;
 
     @OneToMany(mappedBy = "exercise")
+    @JsonIgnore
     private List<WorkoutExercise> workoutExercises = new ArrayList<>();
 }

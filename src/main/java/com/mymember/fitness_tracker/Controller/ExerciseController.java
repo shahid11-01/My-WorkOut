@@ -12,28 +12,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/exercises")
+@RequestMapping("/api/exercises")
 @RequiredArgsConstructor
 public class ExerciseController {
 
     private final ExerciseService exerciseService;
 
     @PostMapping("/createExercise")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Exercise> createExercise(@RequestBody Exercise exercise) {
         Exercise savedExercise = exerciseService.createExercise(exercise);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedExercise);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise updatedExercise) {
         Exercise exercise = exerciseService.updateExercise(id, updatedExercise);
         return ResponseEntity.ok(exercise);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteExercise(@PathVariable Long id) {
         exerciseService.deleteExercise(id);
         return ResponseEntity.noContent().build();

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +32,12 @@ public class Workout {
     @Column(name = "title", columnDefinition = "CHAR(100)",nullable = false)
     private String title;
 
-    @Column(name = "scheduled_date", columnDefinition = "DATETIME")
-    private LocalDateTime scheduledDate;
+    @Column(name = "scheduled_date")
+    private LocalDate scheduledDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private WorkoutStatus status;
+    private WorkoutStatus status = WorkoutStatus.PENDING;
 
     @Column(name = "text", columnDefinition = "TEXT")
     private String text;
@@ -45,8 +46,39 @@ public class Workout {
     @Column(name = "created_at", columnDefinition = "DATETIME", updatable = false)
     private LocalDateTime createdAt;
 
+
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkoutExercise> workoutExercises = new ArrayList<>();
+
+    public long getCompletedExercisesCount(){
+        return this.workoutExercises.stream()
+                .filter(WorkoutExercise:: isFullyCompleted)
+                .count();
+    }
+
+    //완료률을 게산하기
+
+    public int calculateCompletionRate() {
+        int total = this.workoutExercises.size();
+        if(total == 0) {
+            return 0;
+        }
+        long completed = getCompletedExercisesCount();
+        double rate = (double) completed / total * 100;
+        return (int) Math.round(rate);
+
+    }
+
+
+    //워크아웃의 상태를 update하기
+    public void updateStatus() {
+        int total =this.workoutExercises.size();
+        if(total > 0 && getCompletedExercisesCount() == total) {
+            this.status = WorkoutStatus.COMPLETED;
+        } else {
+            this.status =WorkoutStatus.PENDING;
+        }
+    }
 
 
 }

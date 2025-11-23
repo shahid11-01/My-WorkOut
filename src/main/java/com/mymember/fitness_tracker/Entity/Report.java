@@ -39,4 +39,15 @@ public class Report {
     @JoinColumn(name = "user_id")
     private Users users;
 
+    public String getReportTypeDisplayName() {
+        long days = java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd);
+
+        if(days >=28) {
+            return "월간 보고서";
+        } else if ( days <=7) {
+            return "주간 보고서";
+        }
+        return "기간 보고서";
+    }
+
 }

@@ -17,6 +17,9 @@ public class WorkoutExercise {
     private Long workExId;
 
     @Column(nullable = false)
+    private String exerciseName;
+
+    @Column(nullable = false)
     private Long sets;
 
     @Column(nullable = false)
@@ -35,5 +38,9 @@ public class WorkoutExercise {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exercise_id")
     private Exercise exercise;
+
+    public boolean isFullyCompleted() {
+        return this.isCompleted;
+    }
 
 }

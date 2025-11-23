@@ -2,6 +2,7 @@ package com.mymember.fitness_tracker.Controller;
 
 
 import com.mymember.fitness_tracker.Dto.WorkOutRequestDto;
+import com.mymember.fitness_tracker.Dto.WorkoutResponseDto;
 import com.mymember.fitness_tracker.Entity.Workout;
 import com.mymember.fitness_tracker.Service.WorkoutService;
 import lombok.RequiredArgsConstructor;
@@ -24,26 +25,30 @@ public class WorkoutController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Workout> createWorkout(@RequestHeader ("Authorization") String authHeader,
-                                                 @RequestBody WorkOutRequestDto workoutRequestDto) {
-        String token = authHeader.replace("Bearer", "");
-        Workout createdWorkOut = workoutService.createWorkout(token, workoutRequestDto);
-        return ResponseEntity.ok(createdWorkOut);
+    public ResponseEntity<WorkoutResponseDto> createWorkout(@RequestHeader ("Authorization") String authHeader,
+                                                            @RequestBody WorkOutRequestDto workoutRequestDto) {
+
+        Workout createdWorkOut = workoutService.createWorkout(authHeader, workoutRequestDto);
+
+        return ResponseEntity.ok(new WorkoutResponseDto(createdWorkOut));
     }
 
     @GetMapping("/workouts")
-    public ResponseEntity<List<Workout>> listUserWorkouts(
+    public ResponseEntity<List<WorkoutResponseDto>> listUserWorkouts(
         @RequestHeader("Authorization") String authHeader){
-        String token = authHeader.replace("Bearer", "");
-        List<Workout> workouts = workoutService.getUserWorkouts(token);
-        return ResponseEntity.ok(workouts);
+        List<Workout> workouts = workoutService.getUserWorkouts(authHeader);
+        List<WorkoutResponseDto> response = workouts.stream()
+                .map(WorkoutResponseDto:: new)
+                .toList();
+        return ResponseEntity.ok(response);
+
     }
 
     @DeleteMapping("/workouts/{id}")
     public ResponseEntity<Void> deleteWorkOut(@RequestHeader ("Authorization") String authHeader,
             @PathVariable Long id) {
-        String token = authHeader.replace("Bearer", "").trim();
-        workoutService.deleteWorkout(token, id);
+
+        workoutService.deleteWorkout(authHeader, id);
         return ResponseEntity.noContent().build();
     }
 

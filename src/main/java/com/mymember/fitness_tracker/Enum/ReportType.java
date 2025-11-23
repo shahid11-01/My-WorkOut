@@ -1,0 +1,14 @@
+package com.mymember.fitness_tracker.Enum;
+
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ReportType {
+    WEEKLY("주간"),
+    MONTHLY("월간");
+    private final String description;
+
+}
