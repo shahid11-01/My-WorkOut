@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -33,7 +34,7 @@ public class WorkoutController {
         return ResponseEntity.ok(new WorkoutResponseDto(createdWorkOut));
     }
 
-    @GetMapping("/workouts")
+    @GetMapping("/workouts/list")
     public ResponseEntity<List<WorkoutResponseDto>> listUserWorkouts(
         @RequestHeader("Authorization") String authHeader){
         List<Workout> workouts = workoutService.getUserWorkouts(authHeader);
@@ -50,6 +51,18 @@ public class WorkoutController {
 
         workoutService.deleteWorkout(authHeader, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/workouts")
+    public ResponseEntity<List<WorkoutResponseDto>> listUserWorkoutByDate(@RequestHeader("Authorization") String authHeader,
+                                                                          @RequestParam("date") LocalDate date)
+    {
+        List<Workout> workouts = workoutService.getUserWorkOutsByDate(authHeader, date);
+        List<WorkoutResponseDto> response = workouts.stream()
+                .map(WorkoutResponseDto:: new)
+                .toList();
+        return ResponseEntity.ok(response);
+
     }
 
 }

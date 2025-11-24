@@ -18,7 +18,7 @@ public class WorkOutExerciseDto {
     private String comment;
 
     private Long workExId;
-    private Boolean isCompleted;
+    private Long completed;
 
     public WorkOutExerciseDto(WorkoutExercise exercise) {
         this.workExId = exercise.getWorkExId();
@@ -32,7 +32,7 @@ public class WorkOutExerciseDto {
         this.reps = exercise.getReps();
         this.comment = exercise.getComment();
 
-        this.isCompleted = exercise.isCompleted();
+        this.completed = exercise.getCompletedSets();
 
     }
 }

@@ -24,9 +24,17 @@ public class WorkoutExerciseController {
     }
 
     @PatchMapping("/{workExId}/toggle")
-    public ResponseEntity<Void> toggleExercise(@PathVariable("workExId") Long workExId) {
-            workoutExerciseService.toggleComplete(workExId);
+    public ResponseEntity<Void> toggleExercise(@PathVariable("workExId") Long workExId,
+                                               @RequestParam("complete") boolean isMarkingComplete) {
+            workoutExerciseService.toggleComplete(workExId, isMarkingComplete);
             return ResponseEntity.noContent().build();
+
+    }
+
+    @DeleteMapping("/workOutExercises/{id}")
+    public  ResponseEntity<Void> deleteWorkoutExercise(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+        workoutExerciseService.deleteWorkoutExercise(authHeader,id);
+        return ResponseEntity.noContent().build();
 
     }
 

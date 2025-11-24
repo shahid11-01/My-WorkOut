@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -18,6 +20,8 @@ public class WorkoutResponseDto {
     private String status;
     private LocalDate scheduledDate;
 
+    private List<WorkOutExerciseDto> exercises;
+
 
     public WorkoutResponseDto(Workout workout) {
         this.workoutId = workout.getWorkoutId();
@@ -25,6 +29,9 @@ public class WorkoutResponseDto {
         this.scheduledDate = workout.getScheduledDate();
         this.status = workout.getStatus().toString();
 
+        this.exercises = workout.getWorkoutExercises().stream()
+                .map(WorkOutExerciseDto :: new)
+                .collect(Collectors.toList());
         this.totalExercises = workout.getWorkoutExercises().size();
         this.completedExercises = (int) workout.getCompletedExercisesCount();
         this.completionRate = workout.calculateCompletionRate();

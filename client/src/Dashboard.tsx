@@ -45,7 +45,7 @@ export default function Dashboard() {
         // Fetch report history and workouts in parallel
         const [rRes, wRes] = await Promise.all([
           axios.get<ReportDto[]>(`${baseUrl}/api/report/history`, { headers }),
-          axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts`, { headers })
+          axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts/list`, { headers })
         ]);
 
         // Normalize completionRate to number if backend returns BigDecimal/string
@@ -224,7 +224,7 @@ export default function Dashboard() {
               try {
                 const token = localStorage.getItem("token");
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                const wRes = await axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts`, { headers });
+                const wRes = await axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts/list`, { headers });
                 setWorkouts(wRes.data || []);
               } catch (e) {
                 console.error(e);

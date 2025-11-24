@@ -28,8 +28,8 @@ public class WorkoutExercise {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
-    @Column(name = "is_completed")
-    private boolean isCompleted = false;
+    @Column(name = "completed_sets")
+    private Long completedSets = 0L;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id")
@@ -39,8 +39,12 @@ public class WorkoutExercise {
     @JoinColumn(name = "exercise_id")
     private Exercise exercise;
 
+    public Long getCompletedSets() {
+        return this.completedSets != null ? this.completedSets : 0L;
+    }
+
     public boolean isFullyCompleted() {
-        return this.isCompleted;
+        return this.completedSets >= this.sets;
     }
 
 }

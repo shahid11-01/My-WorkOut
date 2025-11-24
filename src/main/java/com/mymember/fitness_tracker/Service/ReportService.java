@@ -46,22 +46,21 @@ public class ReportService {
         LocalDate periodEnd;
 
         if(type == ReportType.WEEKLY) {
-            periodEnd = calculationDate.with(TemporalAdjusters.previous(DayOfWeek.SUNDAY));
-            periodStart = calculationDate.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+            periodEnd = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+            periodStart = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         } else if( type == ReportType.MONTHLY) {
-            periodEnd = calculationDate.with(TemporalAdjusters.firstDayOfMonth()).minusDays(1);
             periodStart = calculationDate.with(TemporalAdjusters.firstDayOfMonth());
+            periodEnd = calculationDate.with(TemporalAdjusters.lastDayOfMonth());
         }else {
             throw new IllegalArgumentException("Invalid report type" + type);
         }
-        LocalDateTime startDateTime = periodStart.atStartOfDay();
-        LocalDateTime endDateTime = periodEnd.atStartOfDay().plusDays(1).minusNanos(1);
+
         Long totalWorkouts = workoutRepository.countByUserAndScheduledDateBetween(
-                user, startDateTime, endDateTime
+                user, periodStart, periodEnd
         );
 
         Long completedWorkouts = workoutRepository.countByUserAndScheduledDateBetweenAndStatus(
-                user, startDateTime, endDateTime, WorkoutStatus.COMPLETED
+                user, periodStart, periodEnd, WorkoutStatus.COMPLETED
         );
 
         // 3. Calculate Rate (using BigDecimal for precision)

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -68,6 +69,15 @@ public class WorkoutService {
                 .orElseThrow(() -> new RuntimeException("워크아웃이 없습니다"));
         workoutRepository.delete(workout);
 
+    }
+
+    @Transactional(readOnly = true)
+    public List<Workout> getUserWorkOutsByDate(String authHeader, LocalDate scheduledDate) {
+        Users user = userAuthService.getAuthenticatedUser(authHeader);
+
+        List<Workout> workouts = workoutRepository.findByUserAndScheduledDate(user, scheduledDate);
+        workouts.forEach(workout -> Hibernate.initialize(workout.getWorkoutExercises()));
+        return workouts;
     }
 
 }

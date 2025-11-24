@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Button } from './components/ui/Button'; // Your provided Button component
-import { Input } from './components/ui/Input';   // Your provided Input component
-import { CustomDialog } from './components/ui/CustomDialog'; // The new Dialog component
+import { Button } from './components/ui/Button'; 
+import { Input } from './components/ui/Input';   
+import { CustomDialog } from './components/ui/CustomDialog'; 
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2, ChevronDown, CheckCircle, Loader2 } from 'lucide-react';
-import { format } from 'date-fns'; // Requires: npm install date-fns
-import { ko } from 'date-fns/locale'; // Requires: npm install date-fns
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 // --- Configuration ---
-const BASE_URL = "http://localhost:8586"; // Your Backend URL
+const BASE_URL = "http://localhost:8586"; 
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
@@ -17,40 +17,128 @@ const getAuthHeaders = () => {
 // ----------------------------
 
 
-// --- Data Structure Types ---
-type Exercise = {
-    id: number;
+// --- Backend DTO Structure ---
+type BackendExerciseDto = {
+    workExId: number;
+    exerciseId: number;
     exerciseName: string;
     sets: number;
     reps: number;
-    text?: string; // CHANGED from memo to text
-    completed: number; // Number of sets completed
-    // Assuming backend returns a unique ID for the WorkoutExercise entity
-    workoutExerciseId?: number; 
+    comment?: string;
+    completed: number; // This comes from completedSets
+};
+
+type BackendWorkoutDto = {
+    workoutId: number;
+    title: string;
+    text?: string;
+    totalSets: number;
+    completedSets: number;
+    completionRate: number; 
+    exercises: BackendExerciseDto[]; // The new list
+};
+
+// --- Frontend Local State Structure ---
+type BaseExercise = {
+    exerciseId: number;
+    exerciseName: string;
+};
+
+type Exercise = {
+    id: number; // Local unique ID (used for React keys and local state)
+    exerciseName: string;
+    exerciseId: number; // Base exercise ID from DB
+    sets: number;
+    reps: number;
+    text?: string;
+    completed: number; 
+    workoutExerciseId?: number; // Backend ID for deleting
 };
 
 type Workout = {
-    id: number;
-    title: string; // e.g., "가슴 + 삼두"
-    text?: string; // CHANGED from memo to text
+    id: number; // Workout ID from DB
+    title: string;
+    text?: string;
     exercises: Exercise[];
     totalSets: number;
     completedSets: number;
-    completionRate: number; // 0.0 to 1.0
+    completionRate: number; 
 };
 // ----------------------------
 
-// Initial/Placeholder Workout Data
 const initialWorkouts: Workout[] = [];
 
 
 export default function Schedule() {
-    const [selectedDate, setSelectedDate] = useState(new Date(2025, 10, 23)); 
+    const [selectedDate, setSelectedDate] = useState(new Date()); 
     const [scheduledWorkouts, setScheduledWorkouts] = useState<Workout[]>(initialWorkouts);
     const [isAddWorkoutModalOpen, setIsAddWorkoutModalOpen] = useState(false);
+    
+    const [availableExercises, setAvailableExercises] = useState<BaseExercise[]>([]); 
+    
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // --- Data Fetching Effect ---
+    const fetchBaseExercises = useCallback(async () => {
+        try {
+            const response = await axios.get<BaseExercise[]>(`${BASE_URL}/api/exercises`, { headers: getAuthHeaders() });
+            setAvailableExercises(response.data.map(ex => ({
+                exerciseId: ex.exerciseId, 
+                exerciseName: ex.exerciseName
+            })));
+        } catch (e) {
+            console.error("Failed to fetch base exercises:", e);
+        }
+    }, []);
+
+    // CRITICAL: Fetching workouts for the selected date from the backend
+    const fetchWorkouts = useCallback(async (date: Date) => {
+        setLoading(true);
+        setError(null);
+        try {
+             const dateString = format(date, 'yyyy-MM-dd');
+
+             const response = await axios.get<BackendWorkoutDto[]>(
+                 `${BASE_URL}/api/workout/workouts?date=${dateString}`, 
+                 { headers: getAuthHeaders() }
+             );
+
+             // Map backend DTO structure to frontend local state structure
+             const mappedWorkouts = response.data.map(w => ({
+                 id: w.workoutId,
+                 title: w.title,
+                 text: w.text,
+                 totalSets: w.totalSets,
+                 completedSets: w.completedSets,
+                 completionRate: w.completionRate,
+                 exercises: w.exercises.map(e => ({
+                     id: Date.now() + e.workExId, // Use temp local ID for React key/state management
+                     exerciseId: e.exerciseId,
+                     exerciseName: e.exerciseName,
+                     sets: e.sets,
+                     reps: e.reps,
+                     text: e.comment, // Map 'comment' (Backend) to 'text' (Frontend)
+                     completed: e.completed, 
+                     workoutExerciseId: e.workExId, // Use real backend ID for API calls
+                 }))
+             }));
+
+             setScheduledWorkouts(mappedWorkouts); 
+
+        } catch (e: any) {
+             console.error("운동 일정을 불러오는 중 오류 발생:", e);
+             setError("운동 일정을 불러오는데 실패했습니다. 서버가 실행 중인지 확인하세요.");
+             setScheduledWorkouts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+    
+    useEffect(() => {
+        fetchBaseExercises();
+        fetchWorkouts(selectedDate);
+    }, [selectedDate, fetchBaseExercises, fetchWorkouts]);
 
     // --- State Logic ---
     const calculateWorkoutStatus = (exercises: Exercise[]): { totalSets: number, completedSets: number, completionRate: number } => {
@@ -72,52 +160,29 @@ export default function Schedule() {
         );
     };
 
-    // --- API Handlers (Integrated with Backend Paths) ---
+    // --- API Handlers ---
 
-    // 1. Fetch Workouts for the Selected Date (Currently using placeholder data)
-    const fetchWorkouts = useCallback(async (date: Date) => {
-        // You would typically call an API endpoint here to fetch workouts by date
-        // Example: axios.get(`${BASE_URL}/api/workout/byDate?date=${format(date, 'yyyy-MM-dd')}`, { headers: getAuthHeaders() })
-        
-        // For now, stick to simple loading indicator
-        setLoading(true);
-        setError(null);
-        try {
-             // Simulating API latency
-             await new Promise(resolve => setTimeout(resolve, 500));
-             setScheduledWorkouts(initialWorkouts); // Use actual response data here
-        } catch (e) {
-            setError("운동 일정을 불러오는데 실패했습니다.");
-            setScheduledWorkouts([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchWorkouts(selectedDate);
-    }, [selectedDate, fetchWorkouts]);
-
-
-    // 2. Create Workout (/api/workout/create)
-    const handleAddWorkout = async (title: string, text: string) => { // CHANGED memo to text
+    // 1. Create Workout (/api/workout/create)
+    const handleAddWorkout = async (title: string, text: string) => { 
         try {
             const dateString = format(selectedDate, 'yyyy-MM-dd');
 
             const response = await axios.post(`${BASE_URL}/api/workout/create`, {
                 title,
-                text, // CHANGED memo to text in payload
-                scheduledDate: dateString, // Pass the selected date to the backend
+                text, 
+                scheduledDate: dateString, 
             }, { headers: getAuthHeaders() });
 
-            // Assuming the response body contains the newly created WorkoutDto with ID
             const createdWorkoutDto = response.data; 
+            
+            if (!createdWorkoutDto.workoutId) {
+                throw new Error("Backend did not return workoutId.");
+            }
 
-            // Add the new workout (and its ID) to the local state
             const newWorkout: Workout = {
                 id: createdWorkoutDto.workoutId, 
                 title,
-                text, // CHANGED memo to text
+                text, 
                 exercises: [],
                 totalSets: 0,
                 completedSets: 0,
@@ -132,7 +197,7 @@ export default function Schedule() {
         }
     };
     
-    // 3. Delete Workout (/api/workout/workouts/{id})
+    // 2. Delete Workout (/api/workout/workouts/{id})
     const handleRemoveWorkout = async (id: number) => {
         if (!window.confirm("정말로 이 운동 일정을 삭제하시겠습니까?")) return;
         
@@ -146,39 +211,54 @@ export default function Schedule() {
         }
     };
 
-    // 4. Toggle Set Completion (Partial Update, currently simulated)
-    const handleToggleSetCompletion = (workoutId: number, exerciseId: number, isComplete: boolean) => {
-        const workoutToUpdate = scheduledWorkouts.find(w => w.id === workoutId);
-        if (!workoutToUpdate) return;
-    
-        const newExercises = workoutToUpdate.exercises.map(ex => {
-            if (ex.id === exerciseId) {
-                // If you were toggling completion status in the backend, you'd call a PATCH endpoint here.
-                // For now, we update local state:
-                let newCompleted = ex.completed;
-                if (isComplete) {
-                    newCompleted = Math.min(ex.sets, ex.completed + 1);
-                } else {
-                    newCompleted = Math.max(0, ex.completed - 1);
-                }
-                return { ...ex, completed: newCompleted };
-            }
-            return ex;
-        });
+    // 3. Toggle Set Completion (SYNCHRONIZED)
+    const handleToggleSetCompletion = async (workoutId: number, exerciseId: number, workoutExerciseId: number | undefined, isMarkingComplete: boolean) => {
+        if (!workoutExerciseId) {
+            console.error("Cannot toggle: Missing workoutExerciseId (Backend ID).");
+            return;
+        }
 
-        updateWorkoutExercises(workoutId, newExercises);
-        
-        // If you were using the PATCH endpoint:
-        // const exerciseToToggle = workoutToUpdate.exercises.find(ex => ex.id === exerciseId);
-        // if (exerciseToToggle && exerciseToToggle.workoutExerciseId) {
-        //     axios.patch(`${BASE_URL}/api/workoutExercise/${exerciseToToggle.workoutExerciseId}/toggle`, {}, { headers: getAuthHeaders() });
-        // }
+        try {
+            // 1. API Call: Update the persistent set count on the backend
+            await axios.patch(
+                `${BASE_URL}/api/workoutExercise/${workoutExerciseId}/toggle?complete=${isMarkingComplete}`, 
+                null, 
+                { headers: getAuthHeaders() }
+            );
+
+            // 2. Local State Update: Only update UI after successful database commit
+            const workoutToUpdate = scheduledWorkouts.find(w => w.id === workoutId);
+            if (!workoutToUpdate) return;
+            
+            const newExercises = workoutToUpdate.exercises.map(ex => {
+                if (ex.id === exerciseId) {
+                    let newCompleted = ex.completed;
+                    
+                    if (isMarkingComplete) {
+                        newCompleted = Math.min(ex.sets, ex.completed + 1);
+                    } else {
+                        newCompleted = Math.max(0, ex.completed - 1);
+                    }
+
+                    // Return the exercise with the new completed count
+                    return { ...ex, completed: newCompleted };
+                }
+                return ex;
+            });
+
+            updateWorkoutExercises(workoutId, newExercises);
+
+        } catch (e: any) {
+            console.error("Failed to toggle set completion:", e);
+            setError("세트 완료 상태 업데이트에 실패했습니다. (서버/인증 오류)");
+        }
     };
 
-    // --- Date Navigation & Render Logic ---
+
+    // --- UI/Date Navigation & Render Logic ---
     const handlePrevDay = () => setSelectedDate(prev => new Date(prev.getTime() - 86400000));
     const handleNextDay = () => setSelectedDate(prev => new Date(prev.getTime() + 86400000));
-    const handleDateSelect = (date: Date) => setSelectedDate(date); // Placeholder for a real calendar picker
+    const handleDateSelect = (date: Date) => setSelectedDate(date); 
 
     const formattedDate = format(selectedDate, 'yyyy년 M월 d일', { locale: ko });
     const hasWorkouts = scheduledWorkouts.length > 0;
@@ -236,6 +316,7 @@ export default function Schedule() {
                             onUpdateExercises={updateWorkoutExercises}
                             onToggleSetCompletion={handleToggleSetCompletion}
                             selectedDate={selectedDate}
+                            availableExercises={availableExercises}
                         />
                     ))
                 ) : (
@@ -244,77 +325,81 @@ export default function Schedule() {
             </div>
 
             {/* 3. Modals */}
-            <WorkoutAddModal 
-                isOpen={isAddWorkoutModalOpen} 
-                onClose={() => setIsAddWorkoutModalOpen(false)}
-                onSave={handleAddWorkout}
-                selectedDate={selectedDate}
-            />
+            {/* ... WorkoutAddModal and ExerciseAddModal components follow below ... */}
         </div>
     );
 }
 
-// --- Helper Components ---
-
-// Empty State Component
-const EmptyScheduleState = ({ onAddWorkout }: { onAddWorkout: () => void }) => (
-    <div className="flex flex-col items-center justify-center p-16 bg-white border border-dashed rounded-xl text-gray-500 space-y-4 shadow-inner">
-        <CalendarIcon className="w-12 h-12 text-gray-300" />
-        <p>이 날짜에 등록된 운동이 없습니다.</p>
-        <p>운동 일정을 추가해보세요!</p>
-        <Button onClick={onAddWorkout} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 mt-4">
-            <Plus className="w-5 h-5" />
-            운동 일정 추가
-        </Button>
-    </div>
-);
+// --- Helper Components (Simplified for brevity) ---
 
 // Individual Workout Item Display Component
 interface WorkoutItemProps {
     workout: Workout; 
     onRemove: (id: number) => void;
     onUpdateExercises: (workoutId: number, exercises: Exercise[]) => void;
-    onToggleSetCompletion: (workoutId: number, exerciseId: number, isComplete: boolean) => void;
+    onToggleSetCompletion: (workoutId: number, exerciseId: number, workoutExerciseId: number | undefined, isMarkingComplete: boolean) => Promise<void>; 
     selectedDate: Date;
+    availableExercises: BaseExercise[]; 
 }
 
-const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompletion, selectedDate }: WorkoutItemProps) => {
+const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompletion, availableExercises }: WorkoutItemProps) => {
     const [isAddExerciseModalOpen, setIsAddExerciseModalOpen] = useState(false);
     
     // 4. Add Exercise (/api/workoutExercise/add)
     const handleAddExercise = async (exercise: Omit<Exercise, 'id' | 'completed' | 'workoutExerciseId'>) => {
-        console.log("WOrkoutID:", workout.id);
         try {
-            const response = await axios.post(`${BASE_URL}/api/workoutExercise/add`, {
-                // Backend DTO structure: workoutId, exerciseName, sets, reps, text
-                workoutId: workout.id, 
-                ...exercise
-            }, { headers: getAuthHeaders() });
+            console.log("Adding exercise to workout ID:", workout.id); 
 
-            const addedExerciseDto = response.data; // Assuming backend returns the Exercise DTO
+            const payload = {
+                workoutId: workout.id, 
+                exerciseId: exercise.exerciseId,
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets,
+                reps: exercise.reps,
+                comment: exercise.text 
+            };
+            
+            const response = await axios.post(`${BASE_URL}/api/workoutExercise/add`, payload, { headers: getAuthHeaders() });
+
+            const addedExerciseDto = response.data; 
 
             const newExercise: Exercise = {
                 ...exercise,
-                id: Date.now(), // Fallback ID for local state
-                completed: 0,
-                workoutExerciseId: addedExerciseDto.workoutExerciseId, // Use the real backend ID
+                id: Date.now(), 
+                completed: addedExerciseDto.completed || 0, // Use the completed status returned by backend
+                workoutExerciseId: addedExerciseDto.workExId, // Use the real backend ID
             };
             
             const newExercises = [...workout.exercises, newExercise];
             onUpdateExercises(workout.id, newExercises);
             setIsAddExerciseModalOpen(false);
+
         } catch (e: any) {
             console.error("Failed to add exercise:", e);
-            alert("운동 추가에 실패했습니다. 서버 연결을 확인하세요.");
+            alert("운동 추가에 실패했습니다. 서버 연결 또는 인증을 확인하세요.");
         }
     };
     
-    const handleRemoveExercise = (exerciseId: number) => {
-        // Since the backend doesn't have a direct delete endpoint for WorkoutExercise in your controllers, 
-        // we simulate deletion by updating the workout exercises. 
-        // If a delete endpoint is added later (e.g., /api/workoutExercise/{id}), it should be called here.
-        const newExercises = workout.exercises.filter(ex => ex.id !== exerciseId);
-        onUpdateExercises(workout.id, newExercises);
+    // 5. Delete Exercise (/api/workoutExercise/workOutExercises/{id})
+    const handleRemoveExercise = async (exercise: Exercise) => {
+        if (!exercise.workoutExerciseId) {
+             console.error("Cannot delete: Missing workoutExerciseId.");
+             return;
+        }
+        if (!window.confirm(`'${exercise.exerciseName}' 항목을 정말로 삭제하시겠습니까?`)) return;
+        
+        try {
+            // Backend Path: /api/workoutExercise/workOutExercises/{id}
+            await axios.delete(`${BASE_URL}/api/workoutExercise/workOutExercises/${exercise.workoutExerciseId}`, { headers: getAuthHeaders() });
+            
+            // Update local state by filtering out the deleted exercise
+            const newExercises = workout.exercises.filter(ex => ex.id !== exercise.id);
+            onUpdateExercises(workout.id, newExercises);
+
+        } catch (e: any) {
+            console.error("Failed to delete exercise:", e);
+            alert("운동 항목 삭제에 실패했습니다. 서버 연결을 확인하세요.");
+        }
     };
 
     return (
@@ -372,7 +457,7 @@ const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompleti
                             exercise={exercise} 
                             workoutId={workout.id}
                             onToggleSetCompletion={onToggleSetCompletion}
-                            onRemove={handleRemoveExercise}
+                            onRemove={handleRemoveExercise} 
                         />
                     ))
                 )}
@@ -383,6 +468,7 @@ const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompleti
                 isOpen={isAddExerciseModalOpen}
                 onClose={() => setIsAddExerciseModalOpen(false)}
                 onSave={handleAddExercise}
+                availableExercises={availableExercises} 
             />
         </div>
     );
@@ -392,8 +478,8 @@ const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompleti
 interface ExerciseRowProps {
     exercise: Exercise;
     workoutId: number;
-    onToggleSetCompletion: (workoutId: number, exerciseId: number, isComplete: boolean) => void;
-    onRemove: (exerciseId: number) => void;
+    onToggleSetCompletion: (workoutId: number, exerciseId: number, workoutExerciseId: number | undefined, isMarkingComplete: boolean) => Promise<void>;
+    onRemove: (exercise: Exercise) => Promise<void>; 
 }
 
 const ExerciseRow = ({ exercise, workoutId, onToggleSetCompletion, onRemove }: ExerciseRowProps) => {
@@ -420,7 +506,7 @@ const ExerciseRow = ({ exercise, workoutId, onToggleSetCompletion, onRemove }: E
                         <div
                             key={setNumber}
                             className={`w-6 h-6 flex items-center justify-center rounded-full border cursor-pointer transition-all duration-200 text-xs font-semibold`}
-                            onClick={() => onToggleSetCompletion(workoutId, exercise.id, setNumber > exercise.completed)}
+                            onClick={() => onToggleSetCompletion(workoutId, exercise.id, exercise.workoutExerciseId, setNumber > exercise.completed)}
                         >
                             {setNumber <= exercise.completed ? (
                                 <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/10" />
@@ -434,7 +520,7 @@ const ExerciseRow = ({ exercise, workoutId, onToggleSetCompletion, onRemove }: E
                 </div>
 
                 {/* Remove Button */}
-                <Button variant="ghost" size="icon" onClick={() => onRemove(exercise.id)} className="text-gray-400 hover:text-red-500">
+                <Button variant="ghost" size="icon" onClick={() => onRemove(exercise)} className="text-gray-400 hover:text-red-500">
                     <Trash2 className="w-4 h-4" />
                 </Button>
             </div>
@@ -442,20 +528,31 @@ const ExerciseRow = ({ exercise, workoutId, onToggleSetCompletion, onRemove }: E
     );
 };
 
+// --- Modal Component 1: Workout Add (For title and text) - SAME AS BEFORE ---
+const EmptyScheduleState = ({ onAddWorkout }: { onAddWorkout: () => void }) => (
+    <div className="flex flex-col items-center justify-center p-16 bg-white border border-dashed rounded-xl text-gray-500 space-y-4 shadow-inner">
+        <CalendarIcon className="w-12 h-12 text-gray-300" />
+        <p>이 날짜에 등록된 운동이 없습니다.</p>
+        <p>운동 일정을 추가해보세요!</p>
+        <Button onClick={onAddWorkout} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 mt-4">
+            <Plus className="w-5 h-5" />
+            운동 일정 추가
+        </Button>
+    </div>
+);
 
-// --- Modal Component 1: Workout Add (For title and text) ---
-const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: boolean, onClose: () => void, onSave: (title: string, text: string) => Promise<void>, selectedDate: Date }) => { // CHANGED memo to text
+const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: boolean, onClose: () => void, onSave: (title: string, text: string) => Promise<void>, selectedDate: Date }) => { 
     const [title, setTitle] = useState('');
-    const [text, setText] = useState(''); // CHANGED memo to text
+    const [text, setText] = useState(''); 
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSubmit = async () => {
         if (title.trim()) {
             setIsSaving(true);
             try {
-                await onSave(title, text); // CHANGED memo to text
+                await onSave(title, text); 
                 setTitle('');
-                setText(''); // CHANGED memo to text
+                setText(''); 
             } catch (error) {
                 // Error handled in parent component
             } finally {
@@ -469,7 +566,7 @@ const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: bo
     return (
         <CustomDialog 
             isOpen={isOpen} 
-            onClose={!isSaving ? onClose : () => {}} // Prevent closing while saving
+            onClose={!isSaving ? onClose : () => {}} 
             title="운동 일정 추가"
             description={dialogDescription}
         >
@@ -489,9 +586,9 @@ const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: bo
                 <div className="space-y-1">
                     <label htmlFor="text-textarea" className="block text-sm font-medium">메모 (선택)</label>
                     <textarea
-                        id="text-textarea" // CHANGED memo to text
-                        value={text} // CHANGED memo to text
-                        onChange={(e) => setText(e.target.value)} // CHANGED memo to text
+                        id="text-textarea" 
+                        value={text} 
+                        onChange={(e) => setText(e.target.value)} 
                         placeholder="ㅋㅋㅋㅋㅋ"
                         rows={3}
                         className="w-full p-2 border border-input rounded-lg resize-none text-sm bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
@@ -516,31 +613,41 @@ const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: bo
 };
 
 
-// --- Modal Component 2: Exercise Add (For sets, reps, text) ---
-const ExerciseAddModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (exercise: Omit<Exercise, 'id' | 'completed' | 'workoutExerciseId'>) => Promise<void> }) => {
-    // These should come from your backend /api/exercises list
-    const predefinedExercises = ["벤치프레스", "스쿼트", "데드리프트", "숄더프레스", "바벨 로우", "바이셉 컬", "트라이셉 익스텐션", "레그 프레스"];
-    const [selectedExercise, setSelectedExercise] = useState('');
+// --- Modal Component 2: Exercise Add (For sets, reps, text) - UPDATED TO USE LIST ---
+interface ExerciseAddModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (exercise: Omit<Exercise, 'id' | 'completed' | 'workoutExerciseId'>) => Promise<void>;
+    availableExercises: BaseExercise[]; 
+}
+
+const ExerciseAddModal = ({ isOpen, onClose, onSave, availableExercises }: ExerciseAddModalProps) => {
+    const [selectedExerciseId, setSelectedExerciseId] = useState<number | ''>('');
     const [sets, setSets] = useState(3);
     const [reps, setReps] = useState(10);
-    const [text, setText] = useState(''); // CHANGED memo to text
+    const [text, setText] = useState(''); 
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSubmit = async () => {
-        if (selectedExercise) {
+        const id = Number(selectedExerciseId);
+        if (id) {
+            const exercise = availableExercises.find(ex => ex.exerciseId === id);
+            if (!exercise) return; 
+
             setIsSaving(true);
             try {
                 await onSave({
-                    exerciseName: selectedExercise,
+                    exerciseId: id, 
+                    exerciseName: exercise.exerciseName, 
                     sets: Number(sets),
                     reps: Number(reps),
-                    text // CHANGED memo to text in payload
+                    text 
                 });
                 // Reset form on successful save
-                setSelectedExercise('');
+                setSelectedExerciseId('');
                 setSets(3);
                 setReps(10);
-                setText(''); // CHANGED memo to text
+                setText('');
             } catch (error) {
                 // Error handled in parent component
             } finally {
@@ -552,7 +659,7 @@ const ExerciseAddModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClos
     return (
         <CustomDialog 
             isOpen={isOpen} 
-            onClose={!isSaving ? onClose : () => {}} // Prevent closing while saving
+            onClose={!isSaving ? onClose : () => {}} 
             title="운동 추가"
             description="일정에 추가할 운동을 선택하세요"
         >
@@ -563,14 +670,16 @@ const ExerciseAddModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClos
                     <div className="relative">
                         <select 
                             id="exercise-select"
-                            value={selectedExercise}
-                            onChange={(e) => setSelectedExercise(e.target.value)}
+                            value={selectedExerciseId}
+                            onChange={(e) => setSelectedExerciseId(Number(e.target.value))}
                             className="flex h-10 w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm appearance-none pr-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            disabled={isSaving}
+                            disabled={isSaving || availableExercises.length === 0}
                         >
-                            <option value="" disabled>운동 선택</option>
-                            {predefinedExercises.map(ex => (
-                                <option key={ex} value={ex}>{ex}</option>
+                            <option value="" disabled>{availableExercises.length === 0 ? "운동 목록을 불러오는 중..." : "운동 선택"}</option>
+                            {availableExercises.map(ex => (
+                                <option key={ex.exerciseId} value={ex.exerciseId}>
+                                    {ex.exerciseName}
+                                </option>
                             ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-500" /> 
@@ -605,9 +714,9 @@ const ExerciseAddModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClos
                 <div className="space-y-1">
                     <label htmlFor="text-textarea-ex" className="block text-sm font-medium">메모 (선택)</label>
                     <textarea
-                        id="text-textarea-ex" // CHANGED memo to text
-                        value={text} // CHANGED memo to text
-                        onChange={(e) => setText(e.target.value)} // CHANGED memo to text
+                        id="text-textarea-ex"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
                         placeholder="60kg"
                         rows={3}
                         className="w-full p-2 border border-input rounded-lg resize-none text-sm bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -620,7 +729,7 @@ const ExerciseAddModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClos
                 <Button variant="outline" onClick={onClose} disabled={isSaving}>
                     취소
                 </Button>
-                <Button onClick={handleSubmit} variant="default" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={!selectedExercise || isSaving}>
+                <Button onClick={handleSubmit} variant="default" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={!selectedExerciseId || isSaving}>
                     {isSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (

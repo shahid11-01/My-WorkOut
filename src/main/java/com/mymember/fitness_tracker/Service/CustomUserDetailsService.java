@@ -4,6 +4,7 @@ package com.mymember.fitness_tracker.Service;
 import com.mymember.fitness_tracker.Entity.Users;
 import com.mymember.fitness_tracker.Repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,9 +15,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    @Autowired
-    private UserRepository userRepository;
+
+    private final  UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
