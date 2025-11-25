@@ -18,10 +18,7 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    /**
-     * Retrieves all saved historical reports for the user.
-     * Maps to: GET /api/report/history
-     */
+
     @GetMapping("/history")
     public ResponseEntity<List<ReportResponseDto>> getReportHistory(
             @RequestHeader("Authorization") String authHeader) {
@@ -32,10 +29,7 @@ public class ReportController {
         return ResponseEntity.ok(reports);
     }
 
-    /**
-     * OPTIONAL: Endpoint to manually trigger report generation for testing/admin purposes.
-     * Maps to: POST /api/report/generate?type=WEEKLY
-     */
+
     @PostMapping("/generate")
     public ResponseEntity<ReportResponseDto> manuallyGenerateReport(
             @RequestHeader("Authorization") String authHeader,

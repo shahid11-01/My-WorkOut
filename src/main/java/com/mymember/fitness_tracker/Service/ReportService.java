@@ -46,8 +46,10 @@ public class ReportService {
         LocalDate periodEnd;
 
         if(type == ReportType.WEEKLY) {
-            periodEnd = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
             periodStart = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            //지난 주의 월요일로 이동
+            periodStart = periodStart.minusWeeks(1);
+            periodEnd = periodStart.plusDays(6);
         } else if( type == ReportType.MONTHLY) {
             periodStart = calculationDate.with(TemporalAdjusters.firstDayOfMonth());
             periodEnd = calculationDate.with(TemporalAdjusters.lastDayOfMonth());

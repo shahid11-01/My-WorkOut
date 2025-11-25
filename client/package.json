@@ -2,6 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8586",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -9,9 +10,11 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
+    "firebase": "^12.6.0",
     "lucide-react": "^0.553.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-is": "^19.2.0",
     "react-router-dom": "^7.9.6",
     "react-scripts": "5.0.1",
     "recharts": "^3.4.1",
@@ -47,7 +50,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
-    "typescript": "^5.9.3"
+    "typescript": "^4.9.5"
   },
   "files.associations": {
     "*.css": "tailwindcss"

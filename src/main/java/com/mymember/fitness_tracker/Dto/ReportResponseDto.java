@@ -31,7 +31,7 @@ public class ReportResponseDto {
 
         this.uncompletedWorkouts = report.getTotalWorkouts() - report.getCompletedWorkouts();
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM월 DD일");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM월 dd일");
         this.periodDisplay = String.format("%s ~ %s",
                 report.getPeriodStart().format(formatter),
                 report.getPeriodEnd().format(formatter));
