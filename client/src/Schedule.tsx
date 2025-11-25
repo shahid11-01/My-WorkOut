@@ -325,7 +325,12 @@ export default function Schedule() {
             </div>
 
             {/* 3. Modals */}
-            {/* ... WorkoutAddModal and ExerciseAddModal components follow below ... */}
+            <WorkoutAddModal
+                isOpen={isAddWorkoutModalOpen}
+                onClose={() => setIsAddWorkoutModalOpen(false)}
+                onSave={handleAddWorkout}
+                selectedDate={selectedDate}
+            />
         </div>
     );
 }

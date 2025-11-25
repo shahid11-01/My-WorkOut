@@ -4,7 +4,7 @@ import { Dumbbell, List, Calendar, FileText, LogOut, LayoutDashboard } from 'luc
 
 const navItems = [
   { name: "대시보드", icon: LayoutDashboard, path: "/" },
-  { name: "운동 목록", icon: List, path: "/workouts" },
+  { name: "운동 목록", icon: List, path: "/exercises" },
   { name: "운동 일정", icon: Calendar, path: "/schedule" },
   { name: "보고서", icon: FileText, path: "/reports" },
 ];

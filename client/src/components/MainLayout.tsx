@@ -6,7 +6,7 @@ import Header from './Header'; // Import the new Header
 import Dashboard from '../Dashboard'; // Your existing Dashboard component
 // You will create these other components
 import Schedule from '../Schedule';
-// import WorkoutList from '../WorkoutList';
+import ExerciseList from '../ExerciseList';
 import Reports from '../Reports'; 
 
 interface MainLayoutProps {
@@ -33,7 +33,7 @@ export function MainLayout({ username, onLogout }: MainLayoutProps) {
           <Route path="/schedule" element={<Schedule />} /> 
           
           {/* Other navigation items */}
-          {/* <Route path="/workouts" element={<WorkoutList />} /> */}
+          <Route path="/exercises" element={<ExerciseList />} />
           <Route path="/reports" element={<Reports />} />
           
           {/* Fallback route if the path doesn't match */}
