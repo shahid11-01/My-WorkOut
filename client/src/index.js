@@ -1,17 +1,30 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+// src/index.js
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+import React from 'react';
+// We use the client-specific API for modern React apps
+import ReactDOM from 'react-dom/client'; 
+// Import BrowserRouter from react-router-dom
+import { BrowserRouter } from 'react-router-dom'; 
+
+// Import your App component (no need for the .tsx extension)
+import App from './App'; 
+import './index.css';
+import reportWebVitals from './reportWebVitals'; // Assuming you use this utility
+
+// 1. Find the root element and create the root
+const root = ReactDOM.createRoot(
+  document.getElementById('root')
+);
+
+// 2. Render the application
 root.render(
   <React.StrictMode>
-    <App />
+    {/* 🔑 THE FIX: Wrap your App component with BrowserRouter */}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+// If you are using reportWebVitals, keep this line
 reportWebVitals();

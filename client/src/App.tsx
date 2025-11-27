@@ -1,7 +1,5 @@
-// src/App.tsx
-
-import { useState } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom'; // Import Router
+import { useState, useEffect } from 'react'; // 👈 1. Import useEffect
+import { useNavigate } from 'react-router-dom';
 import { LoginForm } from './components/LoginForm';
 import { SignupForm } from './components/SignUpForm';
 import { MainLayout } from './components/MainLayout';
@@ -12,23 +10,49 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('login');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
+  
+  const navigate = useNavigate(); 
 
-  const handleLogin = (user: string) => {
+  // 🔑 THE FIX: Check for token on component mount (or refresh)
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUsername = localStorage.getItem("username"); 
+
+    if (storedToken && storedUsername) {
+      // If valid credentials are found, restore the logged-in state
+      setIsLoggedIn(true);
+      setUsername(storedUsername);
+      
+    }
+  }, []); 
+
+  const handleLogin = (user: string, token?: string) => { 
+    // Store credentials in localStorage for persistence across refreshes
+    localStorage.setItem("username", user);
+    
+    if (token) {
+        localStorage.setItem("token", token);
+    }
+    
     setUsername(user);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
-    // Clear token, then log out
+    // Clear ALL stored credentials and reset state
     localStorage.removeItem("token");
+    localStorage.removeItem("username"); // 👈 Must clear username too
     setIsLoggedIn(false);
     setUsername('');
     setActiveTab('login');
+    
+    // Redirects the user to the root path ("/") after logging out.
+    navigate("/", { replace: true });
   };
 
-  // Wrap the entire application logic in <Router>
+  // The component structure is now wrapped in a Fragment, not a Router
   return (
-    <Router>
+    <> 
       {isLoggedIn ? (
         <MainLayout username={username} onLogout={handleLogout} />
       ) : (
@@ -75,6 +99,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </Router>
+    </>
   );
 }

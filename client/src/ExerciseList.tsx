@@ -9,9 +9,6 @@ const API_BASE_URL = '/api/exercises';
 const getMockToken = () => typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : 'MOCK_TOKEN_FOR_ANONYMOUS_USER';
 const initialToken = getMockToken();
 
-/**
- * Custom hook to handle API calls using JWT token from localStorage/mock.
- */
 const useApiCall = () => {
     const initialTokenValue = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
     const token = localStorage.getItem("token") || initialTokenValue || 'MOCK_TOKEN_FOR_ANONYMOUS_USER';
@@ -77,11 +74,11 @@ const useApiCall = () => {
     return { makeApiCall, isAuthenticated };
 };
 
-// --- Custom UI Components (Tailwind CSS based) ---
+// --- Custom UI Components (NO BORDERS!) ---
 
 const Card: React.FC<{ title?: React.ReactNode; className?: string; children: React.ReactNode }> = ({ title, className = '', children }) => (
-    <div className={`bg-white shadow-md rounded-xl border border-gray-100 p-6 ${className}`}>
-        {title && <h3 className="text-lg font-semibold mb-4 border-b pb-2 text-gray-700">{title}</h3>}
+    <div className={`bg-white shadow-md rounded-xl p-6 ${className}`}>
+        {title && <h3 className="text-lg font-bold mb-4 text-gray-800">{title}</h3>}
         {children}
     </div>
 );
@@ -90,19 +87,18 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: 'default' | 'outline' | 'ghost',
     size?: 'default' | 'sm'
 }> = ({ children, variant = 'default', size = 'default', className = '', ...props }) => {
-    let baseStyles = "rounded-lg font-medium transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    let baseStyles = "rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
     const padding = size === 'sm' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2';
     
-    if (variant === 'default') baseStyles += ` bg-blue-600 text-white hover:bg-blue-700 ${padding}`;
-    else if (variant === 'outline') baseStyles += ` border border-gray-300 text-gray-700 hover:bg-gray-50 ${padding}`;
+    if (variant === 'default') baseStyles += ` bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:scale-105 ${padding}`;
+    else if (variant === 'outline') baseStyles += ` bg-white text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md ${padding}`;
     else if (variant === 'ghost') baseStyles += " hover:bg-gray-100 p-2"; 
     
     return <button className={`${baseStyles} ${className}`} {...props}>{children}</button>;
 };
 
 const Badge: React.FC<{ children: React.ReactNode; variant?: 'outline'; className?: string }> = ({ children, className = '' }) => {
-    let baseStyles = "px-2.5 py-0.5 text-xs font-semibold rounded-full border border-gray-300 bg-gray-50 text-gray-700";
-    return <span className={`${baseStyles} ${className}`}>{children}</span>;
+    return <span className={`px-3 py-1 text-xs font-bold rounded-full ${className}`}>{children}</span>;
 };
 
 
@@ -111,8 +107,8 @@ const Badge: React.FC<{ children: React.ReactNode; variant?: 'outline'; classNam
 interface Exercise {
     id: number;
     exerciseName: string;
-    exerciseCategory: string; // Must match backend field
-    exerciseDescription: string; // Must match backend field
+    exerciseCategory: string;
+    exerciseDescription: string;
 }
 
 function ExerciseList() { 
@@ -126,14 +122,14 @@ function ExerciseList() {
 
     const getCategoryColor = (category: string) => {
         const colors: Record<string, string> = {
-            '가슴': 'bg-blue-100 text-blue-800 border-blue-200',
-            '등': 'bg-green-100 text-green-800 border-green-200',
-            '하체': 'bg-purple-100 text-purple-800 border-purple-200',
-            '어깨': 'bg-orange-100 text-orange-800 border-orange-200',
-            '팔': 'bg-pink-100 text-pink-800 border-pink-200',
-            '복근': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+            '가슴': 'bg-blue-500 text-white',
+            '등': 'bg-green-500 text-white',
+            '하체': 'bg-purple-500 text-white',
+            '어깨': 'bg-orange-500 text-white',
+            '팔': 'bg-pink-500 text-white',
+            '복근': 'bg-yellow-500 text-white'
         };
-        return colors[category] || 'bg-gray-100 text-gray-800 border-gray-200';
+        return colors[category] || 'bg-gray-500 text-white';
     };
 
     const fetchExercises = useCallback(async () => {
@@ -173,12 +169,15 @@ function ExerciseList() {
     }, {} as Record<string, number>);
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 font-['Inter']">
+        <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
             
-            {/* Header and Refresh */}
-            <div className="flex items-center justify-between border-b pb-4">
+            {/* Header - NO BORDER */}
+            <div className="flex items-center justify-between bg-white p-6 rounded-xl shadow-sm">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 mb-1">운동 목록 📋</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+                        <span>운동 목록</span>
+                        <span className="text-2xl">📋</span>
+                    </h1>
                     <p className="text-sm text-gray-500">
                         백엔드에서 제공하는 모든 운동을 확인하고 관리합니다.
                     </p>
@@ -188,31 +187,31 @@ function ExerciseList() {
                     variant="outline"
                     disabled={isLoading || !isAuthenticated}
                 >
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <RefreshCw className="w-4 h-4" />
                     새로고침
                 </Button>
             </div>
 
-            {/* Filter Section */}
+            {/* Filter Section - NO BORDERS */}
             <Card>
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                     
-                    {/* Search Input (Disabled) */}
+                    {/* Search Input */}
                     <div className="flex-1 relative w-full sm:w-auto">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             type="text"
                             placeholder="검색 기능 제외됨 (Only Category Filter below)"
                             disabled
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-500 cursor-not-allowed"
+                            className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 text-sm text-gray-500 cursor-not-allowed focus:outline-none"
                         />
                     </div>
                     
-                    {/* Category Filter Dropdown */}
+                    {/* Category Filter Dropdown - NO BORDER */}
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white appearance-none cursor-pointer"
+                        className="w-full sm:w-48 px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-50 to-blue-50 font-semibold text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                         disabled={isLoading}
                     >
                         <option value="all">전체 카테고리</option>
@@ -223,33 +222,39 @@ function ExerciseList() {
                 </div>
             </Card>
 
-            {/* Stat Cards */}
+            {/* Stat Cards - NO BORDERS, Colorful Gradients */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="text-center">
-                    <p className="text-3xl text-blue-600 font-bold mb-1">{exercises.length}</p>
-                    <p className="text-sm text-gray-500">전체 운동</p>
-                </Card>
-                {/* Dynamically generate top categories from the fetched data */}
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg text-center transform transition hover:scale-105">
+                    <p className="text-4xl font-bold mb-1">{exercises.length}</p>
+                    <p className="text-sm text-blue-100">전체 운동</p>
+                </div>
                 {Object.entries(categoryCounts)
                     .sort(([, countA], [, countB]) => countB - countA)
                     .slice(0, 3)
-                    .map(([category, count]) => (
-                    <Card key={category} className="text-center">
-                        <p className="text-3xl text-blue-600 font-bold mb-1">{count}</p>
-                        <p className="text-sm text-gray-500">{category}</p>
-                    </Card>
-                ))}
+                    .map(([category, count], idx) => {
+                        const gradients = [
+                            'from-purple-500 to-pink-600',
+                            'from-green-500 to-emerald-600',
+                            'from-orange-500 to-red-600'
+                        ];
+                        return (
+                            <div key={category} className={`bg-gradient-to-br ${gradients[idx]} text-white p-6 rounded-xl shadow-lg text-center transform transition hover:scale-105`}>
+                                <p className="text-4xl font-bold mb-1">{count}</p>
+                                <p className="text-sm opacity-90">{category}</p>
+                            </div>
+                        );
+                    })}
             </div>
 
             {/* Error Display */}
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl" role="alert">
+                <div className="bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-6 py-4 rounded-xl shadow-md" role="alert">
                     <p className="font-bold">데이터 로딩 오류</p>
                     <p className="text-sm">{error}</p>
                 </div>
             )}
 
-            {/* Exercise List Grid */}
+            {/* Exercise List Grid - NO BORDERS */}
             {isLoading ? (
                 <div className="text-center py-16 bg-white rounded-xl shadow-md">
                     <svg className="animate-spin mx-auto h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -270,13 +275,13 @@ function ExerciseList() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredExercises.map((exercise) => (
-                        <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
+                        <div key={exercise.id} className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                             <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Dumbbell className="w-5 h-5 text-blue-600" />
-                                        
-                                        {/* FIX 1: 운동 이름 표시 */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                                            <Dumbbell className="w-5 h-5 text-white" />
+                                        </div>
                                         <p className="text-lg font-bold text-gray-900">{exercise.exerciseName}</p>
                                     </div>
                                     <Badge className={getCategoryColor(exercise.exerciseCategory)}>
@@ -286,10 +291,9 @@ function ExerciseList() {
                             </div>
                             
                             <div className="mt-4">
-                                <p className="text-sm text-gray-600 mb-3">{exercise.exerciseDescription}</p>
-                                
+                                <p className="text-sm text-gray-600 leading-relaxed">{exercise.exerciseDescription}</p>
                             </div>
-                        </Card>
+                        </div>
                     ))}
                 </div>
             )}
