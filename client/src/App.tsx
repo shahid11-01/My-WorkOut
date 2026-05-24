@@ -16,7 +16,7 @@ export default function App() {
   // 🔑 THE FIX: Check for token on component mount (or refresh)
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
-    const storedUsername = localStorage.getItem("username"); 
+    const storedUsername = localStorage.getItem("userName"); 
 
     if (storedToken && storedUsername) {
       // If valid credentials are found, restore the logged-in state
@@ -41,7 +41,7 @@ export default function App() {
   const handleLogout = () => {
     // Clear ALL stored credentials and reset state
     localStorage.removeItem("token");
-    localStorage.removeItem("username"); // 👈 Must clear username too
+    localStorage.removeItem("userName"); // 👈 Must clear username too
     setIsLoggedIn(false);
     setUsername('');
     setActiveTab('login');
@@ -54,7 +54,7 @@ export default function App() {
   return (
     <> 
       {isLoggedIn ? (
-        <MainLayout username={username} onLogout={handleLogout} />
+        <MainLayout userName={username} onLogout={handleLogout} />
       ) : (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 p-4">
           {/* Background image overlay */}

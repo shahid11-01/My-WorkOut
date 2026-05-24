@@ -9,18 +9,18 @@ import ExerciseList from '../ExerciseList';
 import Reports from '../Reports'; 
 
 interface MainLayoutProps {
- username: string;
+ userName: string;
 onLogout: () => void;
 }
 
-export function MainLayout({ username, onLogout }: MainLayoutProps) {
+export function MainLayout({ userName, onLogout }: MainLayoutProps) {
   const location = useLocation();
 
  return (
    <div className="min-h-screen bg-gray-100">
       
       {/* 1. Header is rendered on all authenticated pages */}
-      <Header userName={username} onLogout={onLogout} />
+      <Header userName={userName} onLogout={onLogout} />
 
       {/* 2. Main content area for routing */}
       <main className="max-w-7xl mx-auto pb-6 sm:px-6 lg:px-8">

@@ -40,15 +40,30 @@ public class ReportService {
     }
 
     @Transactional
+    public void deleteReport(String authHeader, Long reportId) {
+        System.out.println("Report id 출력 " + reportId);
+        Users user = userAuthService.getAuthenticatedUser(authHeader);
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("보고서가 없습니다"));
+        reportRepository.delete(report);
+
+        System.out.println("Report Id 출략" + reportId);
+
+    }
+
+
+
+    @Transactional
     public Report generateAndSaveReport(String authHeader, ReportType type, LocalDate calculationDate) {
         Users user = userAuthService.getAuthenticatedUser(authHeader);
         LocalDate periodStart;
         LocalDate periodEnd;
 
         if(type == ReportType.WEEKLY) {
-            periodStart = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            //지난 주의 월요일로 이동
-            periodStart = periodStart.minusWeeks(1);
+            periodStart = calculationDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+            //이번 주의 월요일로 이동
+            periodStart = periodStart.plusDays(1);
+            // 다음 주의 일요일에 이동
             periodEnd = periodStart.plusDays(6);
         } else if( type == ReportType.MONTHLY) {
             periodStart = calculationDate.with(TemporalAdjusters.firstDayOfMonth());

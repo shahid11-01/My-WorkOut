@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Target, FileText, CheckCircle2, Calendar, Download } from 'lucide-react';
+import { RefreshCw, Target, FileText, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
+import axios from 'axios';
 
 // --- Global Environment Variables (For Mock Token) ---
 declare const __initial_auth_token: string | null;
 
 // Mock API URL 
 const API_BASE_URL = '/api/report';
+const BASE_URL = "http://localhost:8586"; 
+
 
 // --- Type Definitions ---
 
@@ -87,8 +90,12 @@ const SummaryCard: React.FC<{ icon: React.ReactNode; title: string; rate: string
     );
 };
 
-const ReportItem: React.FC<{ report: Report, notify: (message: string, type?: 'success' | 'error') => void }> = ({ report, notify }) => {
-    const isHighRate = report.completionRate >= 80;
+    const ReportItem: React.FC<{ 
+        report: Report; 
+        notify: (message: string, type?: 'success' | 'error') => void;
+        onDelete: (id: number) => void;  // ← add this
+    }> = ({ report, notify, onDelete }) => {
+        const isHighRate = report.completionRate >= 80;
     
     return (
         <div className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
@@ -129,14 +136,14 @@ const ReportItem: React.FC<{ report: Report, notify: (message: string, type?: 's
                     </div>
                 </div>
                 <div className="flex gap-1 ml-4 flex-shrink-0">
-                    {/* Mock Download Button */}
+                    {/* DELETE button replacing Download */}
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => notify(`보고서 [ID: ${report.reportId}] 다운로드 기능이 호출되었습니다.`, 'success')}
-                        className="text-blue-600 hover:bg-blue-50 p-2"
+                        onClick={() => onDelete(report.reportId)}
+                        className="text-red-500 hover:bg-red-50 p-2"
                     >
-                        <Download className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>
             </div>
@@ -244,23 +251,33 @@ const ReportPage: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [selectedType, setSelectedType] = useState<string>('WEEKLY');
     const [selectedPeriodFilter, setSelectedPeriodFilter] = useState<'all' | 'WEEKLY' | 'MONTHLY'>('all');
+    const[workouts, setWorkouts] = useState<any[]>([]);
+    const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
     const { makeApiCall, isAuthenticated } = useApiCall();
 
     const fetchReports = useCallback(async () => {
-        
         setIsLoading(true);
         setError('');
         try {
-            const data = await makeApiCall('/history');
-            setReports(data || []);
+            const [reportData, workoutData] = await Promise.all([
+                makeApiCall('/history'),
+                fetch('/api/workout/workouts/list', {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+                }).then(r => r.json()),
+            ]);
+            setReports(reportData || []);
+            setWorkouts(workoutData || []);
         } catch (err: any) {
             console.error("Failed to fetch reports:", err);
-            setError('보고서 기록을 불러오는 데 실패했습니다: ' + (err instanceof Error ? err.message : String(err)));
+            setError('데이터 불러오기 실패: ' + (err instanceof Error ? err.message : String(err)));
         } finally {
             setIsLoading(false);
         }
-    }, [makeApiCall]); 
+    }, [makeApiCall]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -306,16 +323,15 @@ const ReportPage: React.FC = () => {
         }
     };
     
-    // --- Data Aggregation Logic ---
+   
 
-    const overallStats = reports.reduce((acc, r) => {
-        acc.totalWorkouts += r.totalWorkouts;
-        acc.completedWorkouts += r.completedWorkouts;
-        return acc;
-    }, { totalWorkouts: 0, completedWorkouts: 0 });
+    const totalWorkouts = workouts.length;
+    const completedWorkouts = workouts.filter((w: any) =>
+        Number(w.completedExercises ?? 0) >= Number(w.totalExercises ?? 1)
+    ).length;
 
-    const overallCompletionRate = overallStats.totalWorkouts > 0
-        ? ((overallStats.completedWorkouts / overallStats.totalWorkouts) * 100).toFixed(1)
+    const overallCompletionRate = totalWorkouts > 0
+        ? ((completedWorkouts / totalWorkouts) * 100).toFixed(1)
         : '0.0';
 
     const getLatestReportByType = (type: '주간 보고서' | '월간 보고서'): Report | null => {
@@ -326,6 +342,30 @@ const ReportPage: React.FC = () => {
             return current.reportId > latest.reportId ? current : latest;
         }, filtered[0]);
     };
+    
+
+    const handleDeleteReport = useCallback(async (id: number) => {
+        if (!window.confirm('이 보고서를 삭제하시겠습니까?')) return;
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8586/api/report/report/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) {
+                throw new Error(`삭제 실패: ${response.status}`);
+            }
+
+            setReports(prev => prev.filter(r => r.reportId !== id));
+            console.log(`Report with ID ${id} deleted successfully.`);
+            notify('보고서가 삭제되었습니다.', 'success');
+        } catch (err) {
+            console.error(err);
+            console.log(`삭제가 실패했어요: ${id}`);
+            notify('삭제에 실패했습니다.', 'error');
+        }
+    }, []);
 
     const latestWeekReport = getLatestReportByType('주간 보고서');
     const latestMonthReport = getLatestReportByType('월간 보고서');
@@ -368,8 +408,8 @@ const ReportPage: React.FC = () => {
                         icon={<Target className="w-5 h-5" />}
                         title="전체 완료율"
                         rate={overallCompletionRate}
-                        completed={overallStats.completedWorkouts}
-                        total={overallStats.totalWorkouts}
+                        completed={completedWorkouts}   // ← changed
+                        total={totalWorkouts}           // ← changed
                         bgClass="bg-gradient-to-br from-blue-500 to-blue-600"
                     />
 
@@ -394,9 +434,9 @@ const ReportPage: React.FC = () => {
                     <SummaryCard
                         icon={<FileText className="w-5 h-5" />}
                         title="총 생성된 보고서"
-                        rate={reports.length > 0 ? (reports.length / 10).toFixed(1) : '0.0'}
+                        rate={reports.length.toString()}
                         completed={reports.length}
-                        total={10} 
+                        total={reports.length} 
                         bgClass="bg-gradient-to-br from-orange-500 to-orange-600"
                     />
                 </div>
@@ -475,7 +515,12 @@ const ReportPage: React.FC = () => {
                     ) : (
                         <div className="space-y-3">
                             {filteredReports.map((report) => (
-                                <ReportItem key={report.reportId} report={report} notify={notify} />
+                                <ReportItem 
+                                    key={report.reportId} 
+                                    report={report} 
+                                    notify={notify}
+                                    onDelete={handleDeleteReport} 
+                                />
                             ))}
                         </div>
                     )}

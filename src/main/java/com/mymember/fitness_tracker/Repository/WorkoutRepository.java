@@ -13,6 +13,7 @@ import java.util.List;
 
 public  interface WorkoutRepository extends JpaRepository<Workout, Long> {
     List<Workout> findByUser_UserId(Long userId);
+    List<Workout> findByUser_UserIdAndStatus(Long userId,WorkoutStatus workoutStatus);
 
     Long countByUserAndScheduledDateBetween(
             Users user,
@@ -29,5 +30,6 @@ public  interface WorkoutRepository extends JpaRepository<Workout, Long> {
     );
 
     List<Workout>findByUserAndScheduledDate(Users user, LocalDate scheduledDate);
+
 
 }

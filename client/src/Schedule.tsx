@@ -432,13 +432,13 @@ const WorkoutItem = ({ workout, onRemove, onUpdateExercises, onToggleSetCompleti
 
             {/* Status Bar */}
             <div className="text-sm text-gray-500 border-t pt-3">
-                총 세트: {workout.completedSets}/{workout.totalSets} 완료 | 완료율: <span className="font-semibold text-blue-600">{Math.round(workout.completionRate * 100)}%</span>
+                총 세트: {workout.completedSets}/{workout.totalSets} 완료 | 완료율: <span className="font-semibold text-blue-600">{Math.round(workout.completionRate)}%</span>
             </div>
             {/* Progress Bar */}
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div 
                     className="h-2 bg-blue-500 rounded-full transition-all duration-500" 
-                    style={{ width: `${Math.round(workout.completionRate * 100)}%` }}
+                    style={{ width: `${Math.round(workout.completionRate)}%` }}
                 ></div>
             </div>
 
@@ -594,7 +594,7 @@ const WorkoutAddModal = ({ isOpen, onClose, onSave, selectedDate }: { isOpen: bo
                         id="text-textarea" 
                         value={text} 
                         onChange={(e) => setText(e.target.value)} 
-                        placeholder="ㅋㅋㅋㅋㅋ"
+                        placeholder="메모를 입력하세요"
                         rows={3}
                         className="w-full p-2 border border-input rounded-lg resize-none text-sm bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
                     />
@@ -722,7 +722,7 @@ const ExerciseAddModal = ({ isOpen, onClose, onSave, availableExercises }: Exerc
                         id="text-textarea-ex"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder="60kg"
+                        placeholder="메모를 입력하세요"
                         rows={3}
                         className="w-full p-2 border border-input rounded-lg resize-none text-sm bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         disabled={isSaving}

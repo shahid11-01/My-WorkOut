@@ -36,6 +36,7 @@ public class AuthService {
         Users newUser = new Users();
         newUser.setUserName(registerRequestDto.getUserName());
         newUser.setEmail(registerRequestDto.getEmail());
+        newUser.setPhoneNumber(registerRequestDto.getPhoneNumber());
         newUser.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
         return userRepository.save(newUser);
     }
@@ -54,6 +55,12 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         return jwtTokenProvider.generateToken(authentication.getName());  // Use the email from the auth object
+    }
+
+    public String getUserName(String email) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getUserName();
     }
 
 }

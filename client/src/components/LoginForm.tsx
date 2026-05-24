@@ -8,7 +8,7 @@ import axios from 'axios';
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
-  onLogin: (username: string) => void;
+  onLogin: (userName: string) => void;
 }
 
 export function LoginForm({ onSwitchToSignup, onLogin }: LoginFormProps) {
@@ -28,18 +28,17 @@ export function LoginForm({ onSwitchToSignup, onLogin }: LoginFormProps) {
         password,
       });
 
-      console.log('로그인 성공:', response.data);
+      console.log('로그인 응답 전체:', response.data);
 
        const token = response.data.token;
       localStorage.setItem('token', token);
-      onLogin(email.split('@')[0]);  //임시로 username을 이메일 앞부분으로 설정
-    } catch(error:any) {
+      onLogin(response.data.userName);  
+      } catch (error: any) {
       console.error('로그인 실패:', error);
-      if(error.respomnse && error.response.status ==401) {
-        setError('이메일 또는 비밀번호가 잘못되었습니다');
-      } else {
-        setError('서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.');
-      }
+      const msg = '이메일 또는 비밀번호가 잘못되었습니다.';
+      setError(msg);
+      alert(msg);
+    
     }
    
   };

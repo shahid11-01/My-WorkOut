@@ -16,6 +16,7 @@ export function SignupForm({ onSwitchToLogin, onSignupSuccess }: SignupFormProps
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(''); // 전화번호 입력을 위한 state (추가)
   const [error, setError] = useState(''); // API 오류 메시지를 저장할 state
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,6 +28,7 @@ export function SignupForm({ onSwitchToLogin, onSignupSuccess }: SignupFormProps
       userName: username,
       email: email,
       password: password,
+      phoneNumber: phoneNumber,
     };
 
     try {
@@ -95,6 +97,17 @@ export function SignupForm({ onSwitchToLogin, onSignupSuccess }: SignupFormProps
               placeholder="이메일 입력"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber">전화번호</Label>
+            <Input
+              id="phoneNumber"
+              type="text"
+              placeholder="전화번호 입력"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
               required
             />
           </div>

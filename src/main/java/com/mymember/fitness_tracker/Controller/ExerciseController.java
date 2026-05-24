@@ -47,4 +47,10 @@ public class ExerciseController {
         Exercise exercise = exerciseService.getExerciseById(id);
         return ResponseEntity.ok(exercise);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Exercise>>searchExerciseByName(@RequestParam String name) {
+        List<Exercise> exercises = exerciseService.searchByName(name);
+        return ResponseEntity.ok(exercises);
+    }
 }

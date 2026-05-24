@@ -5,6 +5,7 @@ import com.mymember.fitness_tracker.Entity.Report;
 import com.mymember.fitness_tracker.Enum.ReportType;
 import com.mymember.fitness_tracker.Service.ReportService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,14 @@ public class ReportController {
         List<ReportResponseDto> reports = reportService.getSavedReports(authHeader);
 
         return ResponseEntity.ok(reports);
+    }
+
+    @DeleteMapping("/report/{id}")
+    public ResponseEntity<ReportResponseDto> deleteReport(@RequestHeader("Authorization") String authHeader,
+                                                          @PathVariable Long id) {
+        System.out.println("ReportId" + id);
+        reportService.deleteReport(authHeader, id);
+        return ResponseEntity.noContent().build();
     }
 
 

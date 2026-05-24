@@ -30,6 +30,8 @@ export default function Dashboard() {
   const [workouts, setWorkouts] = useState<WorkoutDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const[incompleteWorkouts, setIncompleteWorkouts] = useState<WorkoutDto[]>([]);
+  
 
   const baseUrl = "http://localhost:8586";
 
@@ -41,9 +43,10 @@ export default function Dashboard() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       try {
-        const [rRes, wRes] = await Promise.all([
+        const [rRes, wRes, iRes] = await Promise.all([
           axios.get<ReportDto[]>(`${baseUrl}/api/report/history`, { headers }),
-          axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts/list`, { headers })
+          axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/workouts/list`, { headers }),
+          axios.get<WorkoutDto[]>(`${baseUrl}/api/workout/incomplete`, { headers }),
         ]);
 
         const normalizedReports = (rRes.data || []).map((r) => ({
@@ -53,6 +56,7 @@ export default function Dashboard() {
 
         setReports(normalizedReports);
         setWorkouts(wRes.data || []);
+        setIncompleteWorkouts(iRes.data || []);  //미완려돤 운동을 저장
       } catch (e: any) {
         console.error("Dashboard fetch error:", e);
         setError(
@@ -94,6 +98,7 @@ export default function Dashboard() {
   })();
 
   const totalWorkouts = workouts?.length ?? 0;
+  const incompleteCount = workouts?.reduce((acc, w) => acc + (Number(w.completedExercises ?? 0) < Number(w.totalExercises ?? 1) ? 1 : 0), 0);
   const totalCompleted = workouts?.reduce((acc, w) => acc + (Number(w.completedExercises ?? 0)), 0);
   const latestReport = reports.length > 0 ? reports[0] : undefined;
   const completionRate = latestReport ? Number(latestReport.completionRate ?? 0) : 0;
@@ -105,14 +110,14 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3 text-gray-800">
             <Dumbbell className="w-8 h-8 text-indigo-600" />
-            Dashboard
+            대시보드
           </h1>
           <p className="text-sm text-gray-500 mt-1">오늘의 운동 현황을 확인하세요</p>
         </div>
         <div className="text-right bg-gradient-to-br from-indigo-50 to-purple-50 px-6 py-4 rounded-xl">
           <p className="text-sm text-gray-600 font-medium">완료율 (최근 리포트)</p>
           <p className="text-3xl font-bold text-indigo-600">
-            {(completionRate * 100).toFixed(0)}%
+            {(completionRate).toFixed(0)}%
           </p>
         </div>
       </div>
@@ -151,8 +156,8 @@ export default function Dashboard() {
             <Flame className="w-8 h-8" />
           </div>
           <div>
-            <p className="text-sm text-orange-100">연속 운동</p>
-            <p className="text-3xl font-bold">7일</p>
+            <p className="text-sm text-orange-100">진행 중인 운동</p>
+            <p className="text-3xl font-bold">{incompleteCount}</p>
           </div>
         </div>
       </div>
@@ -204,7 +209,7 @@ export default function Dashboard() {
             <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
               <p className="text-sm text-gray-600 font-medium">완료율</p>
               <p className="text-2xl font-bold text-purple-600">
-                {(completionRate * 100).toFixed(0)}%
+                {(completionRate).toFixed(0)}%
               </p>
             </div>
 
@@ -260,7 +265,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold">
-                    {w.completionRate ? `${(Number(w.completionRate) * 100).toFixed(0)}%` : "-"}
+                    {w.completionRate ? `${(Number(w.completionRate)).toFixed(0)}%` : "-"}
                   </span>
                 </div>
               </div>

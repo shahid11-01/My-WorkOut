@@ -8,6 +8,7 @@ import com.mymember.fitness_tracker.Service.WorkoutService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -20,10 +21,7 @@ public class WorkoutController {
 
     private final WorkoutService workoutService;
 
-    @GetMapping("/hello")
-    public String helloProtected() {
-        return "If you can see this, you are authenticated";
-    }
+
 
     @PostMapping("/create")
     public ResponseEntity<WorkoutResponseDto> createWorkout(@RequestHeader ("Authorization") String authHeader,
@@ -35,8 +33,7 @@ public class WorkoutController {
     }
 
     @GetMapping("/workouts/list")
-    public ResponseEntity<List<WorkoutResponseDto>> listUserWorkouts(
-        @RequestHeader("Authorization") String authHeader){
+    public ResponseEntity<List<WorkoutResponseDto>> listUserWorkouts(@RequestHeader("Authorization") String authHeader){
         List<Workout> workouts = workoutService.getUserWorkouts(authHeader);
         List<WorkoutResponseDto> response = workouts.stream()
                 .map(WorkoutResponseDto:: new)
@@ -63,6 +60,18 @@ public class WorkoutController {
                 .toList();
         return ResponseEntity.ok(response);
 
+    }
+
+
+    @Transactional(readOnly = true)
+    @GetMapping("/incomplete")
+    public ResponseEntity<List<WorkoutResponseDto>> getIncompleteWorkouts(@RequestHeader("Authorization") String authHeader){
+        System.out.println("incomplete endpoint hit, header" + authHeader);
+        List<Workout> incompleteWorkouts = workoutService.inCompleted(authHeader);
+        List<WorkoutResponseDto> response = incompleteWorkouts.stream()
+                .map(WorkoutResponseDto:: new)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
 }
