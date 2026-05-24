@@ -28,7 +28,7 @@ export default function App() {
 
   const handleLogin = (user: string, token?: string) => { 
     // Store credentials in localStorage for persistence across refreshes
-    localStorage.setItem("username", user);
+    localStorage.setItem("userName", user);
     
     if (token) {
         localStorage.setItem("token", token);

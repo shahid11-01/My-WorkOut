@@ -30,8 +30,10 @@ export function LoginForm({ onSwitchToSignup, onLogin }: LoginFormProps) {
 
       console.log('로그인 응답 전체:', response.data);
 
-       const token = response.data.token;
+      const token = response.data.token;
+      const userName = response.data.userName;
       localStorage.setItem('token', token);
+      localStorage.setItem('userName', userName); 
       onLogin(response.data.userName);  
       } catch (error: any) {
       console.error('로그인 실패:', error);
