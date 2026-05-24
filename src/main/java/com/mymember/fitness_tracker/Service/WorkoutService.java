@@ -5,6 +5,7 @@ import com.mymember.fitness_tracker.Configuration.JwtTokenProvider;
 import com.mymember.fitness_tracker.Dto.WorkOutRequestDto;
 import com.mymember.fitness_tracker.Entity.Users;
 import com.mymember.fitness_tracker.Entity.Workout;
+import com.mymember.fitness_tracker.Enum.WorkoutStatus;
 import org.hibernate.Hibernate;
 import com.mymember.fitness_tracker.Repository.UserRepository;
 import com.mymember.fitness_tracker.Repository.WorkoutRepository;
@@ -60,6 +61,14 @@ public class WorkoutService {
 
         //초기화된 워크아웃 리스트를 반환합니다.
         return  workouts;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Workout> inCompleted(String authHeader ) {
+        Users user = userAuthService.getAuthenticatedUser(authHeader);
+
+        return workoutRepository.findByUser_UserIdAndStatus(user.getUserId(), WorkoutStatus.PENDING);
+
     }
 
     public void deleteWorkout(String authHeader, Long workoutId) {

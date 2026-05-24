@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Dumbbell, RefreshCw } from 'lucide-react';
 
-// --- API Call Hook ---
+// --- API Call Hook (Kept intact) ---
 declare const __initial_auth_token: string | null;
 
-const API_BASE_URL = '/api/exercises';
+const API_BASE_URL = '/api/exercises'; // Base path for all calls
 
 const getMockToken = () => typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : 'MOCK_TOKEN_FOR_ANONYMOUS_USER';
 const initialToken = getMockToken();
@@ -116,6 +116,11 @@ function ExerciseList() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
+    // 🔑 NEW STATE: For Search
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    // State to hold the result of the last executed search (useful for display)
+    const [currentSearch, setCurrentSearch] = useState<string>(''); 
+    
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     
     const { makeApiCall, isAuthenticated } = useApiCall();
@@ -132,7 +137,8 @@ function ExerciseList() {
         return colors[category] || 'bg-gray-500 text-white';
     };
 
-    const fetchExercises = useCallback(async () => {
+    // 🔑 UPDATED: Now handles both search and general fetch
+    const fetchExercises = useCallback(async (query: string = '') => {
         if (!isAuthenticated) {
             setError("인증 토큰이 유효하지 않습니다. 로그인 상태를 확인해주세요.");
             setIsLoading(false);
@@ -141,28 +147,72 @@ function ExerciseList() {
 
         setIsLoading(true);
         setError(null);
+        
+        let endpoint = '';
+        
+        if (query) {
+            // Use the specific search endpoint you defined: /api/exercises/search?name={query}
+            endpoint = `/search?name=${encodeURIComponent(query)}`;
+            setCurrentSearch(query);
+        } else {
+            // Default endpoint to fetch all exercises
+            endpoint = ''; 
+            setCurrentSearch('');
+        }
+        
         try {
-            const data = await makeApiCall('');
-            setExercises((data as Exercise[] | null) || []);
+            const data = await makeApiCall(endpoint);
+            
+            // Backend returns a single object if found by name, or an array if no query (assuming standard fetch)
+            let resultExercises: Exercise[] = [];
+
+            if (Array.isArray(data)) {
+                resultExercises = data;
+            } else if (data && typeof data === 'object') {
+                 // If the backend returns a single Exercise object (as your original controller suggested), 
+                 // we wrap it in an array for consistency.
+                 resultExercises = [data as Exercise];
+            }
+            
+            setExercises(resultExercises.filter(e => e.exerciseName)); // Filter out any empty entries
+            
         } catch (err: any) {
             console.error("Failed to fetch exercises:", err);
             setError('운동 목록을 불러오는 데 실패했습니다: ' + (err.message || String(err)));
+            setExercises([]); // Clear list on error
         } finally {
             setIsLoading(false);
         }
     }, [isAuthenticated, makeApiCall]);
 
+    // Initial fetch on component load (fetch everything)
     useEffect(() => {
         fetchExercises();
     }, [fetchExercises]);
     
+    
+    // Handler for the actual search button click or form submit
+    const handleSearch = (e?: React.FormEvent) => {
+        e?.preventDefault(); // Prevent page reload if called from a form
+        setSelectedCategory('all'); // Reset category filter on new search
+        fetchExercises(searchTerm);
+    };
+    
+    // Handler for refreshing/resetting the list
+    const handleReset = () => {
+        setSearchTerm('');
+        setSelectedCategory('all');
+        fetchExercises(''); // Fetch all exercises
+    };
+    
+    // Filtering logic remains the same (for client-side category filtering)
     const uniqueCategories = Array.from(new Set(exercises.map(e => e.exerciseCategory)))
         .filter(c => c);
     
     const filteredExercises = exercises.filter(exercise => {
         return selectedCategory === 'all' || exercise.exerciseCategory === selectedCategory;
     });
-    
+
     const categoryCounts: Record<string, number> = exercises.reduce((acc, e) => {
         acc[e.exerciseCategory] = (acc[e.exerciseCategory] || 0) + 1;
         return acc;
@@ -171,7 +221,7 @@ function ExerciseList() {
     return (
         <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
             
-            {/* Header - NO BORDER */}
+            {/* Header */}
             <div className="flex items-center justify-between bg-white p-6 rounded-xl shadow-sm">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-2">
@@ -183,31 +233,43 @@ function ExerciseList() {
                     </p>
                 </div>
                 <Button 
-                    onClick={fetchExercises}
+                    onClick={handleReset}
                     variant="outline"
                     disabled={isLoading || !isAuthenticated}
                 >
                     <RefreshCw className="w-4 h-4" />
-                    새로고침
+                    전체 목록
                 </Button>
             </div>
 
-            {/* Filter Section - NO BORDERS */}
+            {/* Filter & Search Section - UPDATED */}
             <Card>
-                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                     
                     {/* Search Input */}
                     <div className="flex-1 relative w-full sm:w-auto">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             type="text"
-                            placeholder="검색 기능 제외됨 (Only Category Filter below)"
-                            disabled
-                            className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 text-sm text-gray-500 cursor-not-allowed focus:outline-none"
+                            placeholder="운동 이름으로 검색"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isLoading}
                         />
                     </div>
                     
-                    {/* Category Filter Dropdown - NO BORDER */}
+                    {/* Search Button */}
+                    <Button 
+                        type="submit"
+                        disabled={isLoading || !searchTerm}
+                        className="w-full sm:w-auto"
+                    >
+                        <Search className="w-4 h-4" />
+                        검색
+                    </Button>
+
+                    {/* Category Filter Dropdown */}
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
@@ -219,10 +281,15 @@ function ExerciseList() {
                             <option key={category} value={category}>{category}</option>
                         ))}
                     </select>
-                </div>
+                </form>
+                {currentSearch && (
+                    <p className="mt-3 text-sm text-gray-600">
+                        현재 검색 결과: <span className="font-bold text-blue-600">"{currentSearch}"</span> ({exercises.length} 개)
+                    </p>
+                )}
             </Card>
 
-            {/* Stat Cards - NO BORDERS, Colorful Gradients */}
+            {/* Stat Cards (unchanged) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg text-center transform transition hover:scale-105">
                     <p className="text-4xl font-bold mb-1">{exercises.length}</p>
@@ -246,7 +313,7 @@ function ExerciseList() {
                     })}
             </div>
 
-            {/* Error Display */}
+            {/* Error Display (unchanged) */}
             {error && (
                 <div className="bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-6 py-4 rounded-xl shadow-md" role="alert">
                     <p className="font-bold">데이터 로딩 오류</p>
@@ -254,7 +321,7 @@ function ExerciseList() {
                 </div>
             )}
 
-            {/* Exercise List Grid - NO BORDERS */}
+            {/* Exercise List Grid (unchanged) */}
             {isLoading ? (
                 <div className="text-center py-16 bg-white rounded-xl shadow-md">
                     <svg className="animate-spin mx-auto h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -268,7 +335,7 @@ function ExerciseList() {
                     <div className="flex flex-col items-center justify-center py-16">
                         <Dumbbell className="w-16 h-16 text-gray-300 mb-4" />
                         <p className="text-gray-500 text-center">
-                            {selectedCategory !== 'all' ? '해당 카테고리의 운동이 없습니다.' : '등록된 운동이 없습니다.'}
+                            {selectedCategory !== 'all' || currentSearch ? '검색 조건과 일치하는 운동이 없습니다.' : '등록된 운동이 없습니다.'}
                         </p>
                     </div>
                 </Card>

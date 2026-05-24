@@ -23,7 +23,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-
     private final CustomUserDetailsService customUserDetailsService;
 
     @Override

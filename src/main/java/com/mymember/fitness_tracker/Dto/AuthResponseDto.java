@@ -9,4 +9,5 @@ import lombok.Getter;
 public class AuthResponseDto {
     private String token;
     private String message;
+    private String userName;
 }

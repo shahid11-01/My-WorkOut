@@ -7,6 +7,7 @@ import com.mymember.fitness_tracker.Entity.Exercise;
 import com.mymember.fitness_tracker.Entity.Users;
 import com.mymember.fitness_tracker.Entity.Workout;
 import com.mymember.fitness_tracker.Entity.WorkoutExercise;
+import com.mymember.fitness_tracker.Enum.WorkoutStatus;
 import com.mymember.fitness_tracker.Repository.ExerciseRepository;
 import com.mymember.fitness_tracker.Repository.UserRepository;
 import com.mymember.fitness_tracker.Repository.WorkoutExerciseRepository;
@@ -14,6 +15,8 @@ import com.mymember.fitness_tracker.Repository.WorkoutRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +73,8 @@ public class WorkoutExerciseService {
     }
 
 
+
+
     @Transactional
     public void deleteWorkoutExercise(String authHeader,Long workoutExerciseId) {
 
@@ -105,6 +110,7 @@ public class WorkoutExerciseService {
 
 
     }
+
 
 
 
